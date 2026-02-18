@@ -29,7 +29,7 @@ ISR(INT0_vect) {
 
   uint8_t pin = relay_state ? RELAY_SET : RELAY_RESET;
 
-  // Pulse RELAY_SET high for 100ms
+  // Pulse appropriate pin high for 100ms
   PORTB |= (1 << pin);
   _delay_ms(100);
   PORTB &= ~(1 << pin);
