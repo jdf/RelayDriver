@@ -9,4 +9,5 @@ _build/
 !cmake/**/user.cmake
 cmake/**/.generated/*
 cmake/**/CMake*
+!cmake/**/CMakePresets.json
 out/
