@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build and Flash ATtiny85",
+			"type": "shell",
+			"command": "cmake --build _build/RelayDriver/default && avrdude -c usbtiny -p t85 -U flash:w:out/RelayDriver/default.hex:i && avrdude -c usbtiny -p t85 -U flash:v:out/RelayDriver/default.hex:i",
+			"isBackground": false
+		}
+	]
+}
