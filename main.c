@@ -91,12 +91,12 @@ int main() {
   sei();
 
   while (1) {
+    service_switch_interrupt = false;
+    service_timer_interrupt = false;
     sleep_mode();
     if (service_switch_interrupt) {
-      service_switch_interrupt = false;
       service_switch();
     } else if (service_timer_interrupt) {
-      service_timer_interrupt = false;
       service_timer();
     }
   }
