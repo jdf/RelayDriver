@@ -27,7 +27,8 @@
 // Timer0 overflow at ~16.384ms (1MHz/64/256). 16 overflows ~= 0.262s.
 #define WDT_TICK_COUNT 16
 
-#define TIMER0_PRESCALE_BITS ((1 << CS01) | (1 << CS00)) // Timer0 prescaler 64
+// Timer0 prescaler 64
+#define TIMER0_PRESCALE_BITS ((1 << CS01) | (1 << CS00))
 #define TIMER0_INTERRUPT_ENABLE_MASK (1 << TOIE0)
 
 // Timer1 prescaler 64 (CS13..CS10 = 0b0111 on ATtiny85 Timer1)
@@ -38,47 +39,34 @@ volatile uint8_t debounce_and_relay_counter = 0;
 volatile uint8_t active_pin_out = RELAY_RESET;
 volatile uint8_t wdt_tick_counter = 0;
 
-// Start Timer0 with prescaler 64
 void start_debounce_timer() {
-  TCNT0 = 0; // Reset counter so overflow timing is consistent
+  TCNT0 = 0;
   TCCR0B |= TIMER0_PRESCALE_BITS;
   TIMSK |= TIMER0_INTERRUPT_ENABLE_MASK; // Enable Timer0 OVF interrupt
 }
 
-// Stop Timer0
 void stop_debounce_timer() {
   TCCR0B &= ~TIMER0_PRESCALE_BITS;
   TIMSK &= ~TIMER0_INTERRUPT_ENABLE_MASK; // Disable Timer0 OVF interrupt
 }
 
-// Start Timer1 for watchdog check-ins
 void start_watchdog_timer() {
   TCNT1 = 0;
   TCCR1 |= TIMER1_PRESCALE_BITS;
   TIMSK |= TIMER1_INTERRUPT_ENABLE_MASK; // Enable Timer1 OVF interrupt
 }
 
-volatile bool service_switch_interrupt = false;
-volatile bool service_debounce_timer_interrupt = false;
-volatile bool service_watchdog_timer_interrupt = false;
-
-ISR(INT0_vect) { service_switch_interrupt = true; }
-ISR(TIM0_OVF_vect) { service_debounce_timer_interrupt = true; }
-ISR(TIM1_OVF_vect) { service_watchdog_timer_interrupt = true; }
-
-// Interrupt 0 is triggered on a rising edge of PB2, so we can use it to toggle
-// the relay and start a debounce timer. The debounce timer will keep the relay
-// pin high for a short duration to ensure the relay is activated, and then
-// clear the pin after the pulse duration has elapsed.
-void enable_int0() {
+// Interrupt 0 is triggered on a rising edge of PB2.
+void enable_switch_interrupt() {
   // Rising edge = 0b11 for ISC01..ISC00
   MCUCR |= (1 << ISC01) | (1 << ISC00);
   GIMSK |= (1 << INT0); // Enable INT0
 }
 
-void disable_int0() { GIMSK &= ~(1 << INT0); }
+void disable_switch_interrupt() { GIMSK &= ~(1 << INT0); }
 
-void service_switch() {
+// Service switch going high.
+ISR(INT0_vect) {
   if (active_pin_out == RELAY_SET) {
     active_pin_out = RELAY_RESET;
   } else {
@@ -86,7 +74,7 @@ void service_switch() {
   }
 
   // debounce
-  disable_int0();
+  disable_switch_interrupt();
 
   // Set relay pin high and start timer.
   PORTB |= (1 << active_pin_out);
@@ -94,7 +82,8 @@ void service_switch() {
   start_debounce_timer();
 }
 
-void service_debounce_timer() {
+// Service debounce timer.
+ISR(TIM0_OVF_vect) {
   if (debounce_and_relay_counter > 0) {
     debounce_and_relay_counter--;
   } else {
@@ -102,11 +91,12 @@ void service_debounce_timer() {
     // re-enable INT0 for the next switch event.
     PORTB &= ~(1 << active_pin_out);
     stop_debounce_timer();
-    enable_int0();
+    enable_switch_interrupt();
   }
 }
 
-void service_watchdog_timer() {
+// Service watchdog timer.
+ISR(TIM1_OVF_vect) {
   wdt_tick_counter++;
   if (wdt_tick_counter >= WDT_TICK_COUNT) {
     wdt_reset();
@@ -122,38 +112,17 @@ int main() {
   // Initialize both relay pins low
   PORTB &= ~((1 << RELAY_SET) | (1 << RELAY_RESET));
 
-  // Configure INT0 (PB2) for rising edge interrupt
-  MCUCR |= (1 << ISC01) | (1 << ISC00);
-  GIMSK |= (1 << INT0); // Enable INT0
-
-  // Set sleep mode to idle (lowest power consumption while keeping timers
-  // running)
-  set_sleep_mode(SLEEP_MODE_IDLE);
-
-  // Start Timer1 for periodic watchdog check-ins
+  enable_switch_interrupt();
   start_watchdog_timer();
 
-  // Enable watchdog reset at 1 second
-  wdt_enable(WDTO_1S);
+  wdt_enable(WDTO_1S); // Enable watchdog reset at 1 second
   wdt_reset();
 
-  // Enable interrupts globally
-  sei();
+  set_sleep_mode(SLEEP_MODE_IDLE); // allow timers during sleep
+  sei();                           // enable interrupts globally
 
   while (1) {
-    service_switch_interrupt = false;
-    service_debounce_timer_interrupt = false;
-    service_watchdog_timer_interrupt = false;
     sleep_mode();
-    if (service_switch_interrupt) {
-      service_switch();
-    }
-    if (service_debounce_timer_interrupt) {
-      service_debounce_timer();
-    }
-    if (service_watchdog_timer_interrupt) {
-      service_watchdog_timer();
-    }
   }
 
   return 0;
