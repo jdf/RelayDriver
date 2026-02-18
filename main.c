@@ -2,7 +2,8 @@
  * @file main.c
  * @author jdf
  * @date 2026-02-16
- * @brief Sleep until IO pin goes high on positive edge
+ * @brief Listen for a rising edge on PB2 (INT0) and toggle a relay connected to
+ * PB0/PB1 accordingly.
  */
 
 #ifndef F_CPU
@@ -41,10 +42,12 @@ int main() {
   PORTB &= ~((1 << RELAY_SET) | (1 << RELAY_RESET));
 
   // Configure INT0 (PB2) for rising edge interrupt
-  MCUCR = (MCUCR & ~((1 << ISC01) | (1 << ISC00))) | (1 << ISC01) | (1 << ISC00);
-  GIMSK |= (1 << INT0);  // Enable INT0
+  MCUCR =
+      (MCUCR & ~((1 << ISC01) | (1 << ISC00))) | (1 << ISC01) | (1 << ISC00);
+  GIMSK |= (1 << INT0); // Enable INT0
 
-  // Set sleep mode to idle (lowest power consumption while keeping timers running)
+  // Set sleep mode to idle (lowest power consumption while keeping timers
+  // running)
   set_sleep_mode(SLEEP_MODE_IDLE);
 
   // Enable interrupts globally
