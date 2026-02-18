@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "name": "AVR",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/Users/jdf/.mplab/app-finder/apps/avr-gcc/v7.3.0/avr8-gnu-toolchain-darwin_x86_64/lib/gcc/avr/7.3.0/include",
+                "/Users/jdf/.mplab/app-finder/apps/avr-gcc/v7.3.0/avr8-gnu-toolchain-darwin_x86_64/avr/include",
+                "/Users/jdf/.mchp_packs/Microchip/ATtiny_DFP/3.3.272/include"
+            ],
+            "defines": [
+                "__AVR_ATtiny85__",
+                "F_CPU=1000000UL",
+                "__AVR__"
+            ],
+            "compilerPath": "/Users/jdf/.mplab/app-finder/apps/avr-gcc/v7.3.0/avr8-gnu-toolchain-darwin_x86_64/bin/avr-gcc",
+            "cStandard": "c11",
+            "intelliSenseMode": "gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "/Users/jdf/.mplab/app-finder/apps/avr-gcc/v7.3.0/avr8-gnu-toolchain-darwin_x86_64/avr/include",
+                    "/Users/jdf/.mchp_packs/Microchip/ATtiny_DFP/3.3.272/include"
+                ]
+            }
+        }
+    ],
+    "version": 4
+}
+
