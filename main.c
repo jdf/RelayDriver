@@ -39,6 +39,8 @@ volatile uint8_t debounce_and_relay_counter = 0;
 volatile uint8_t active_pin_out = RELAY_RESET;
 volatile uint8_t wdt_tick_counter = 0;
 
+volatile bool pet_the_dog = false;
+
 void start_debounce_timer() {
   TCNT0 = 0;
   TCCR0B |= TIMER0_PRESCALE_BITS;
@@ -99,10 +101,9 @@ ISR(TIM0_OVF_vect) {
 ISR(TIM1_OVF_vect) {
   wdt_tick_counter++;
   if (wdt_tick_counter >= WDT_TICK_COUNT) {
-    wdt_reset();
     wdt_tick_counter = 0;
-    // Reset Timer1 counter to maintain consistent overflow timing
     TCNT1 = 0;
+    pet_the_dog = true;
   }
 }
 
@@ -123,6 +124,10 @@ int main() {
 
   while (1) {
     sleep_mode();
+    if (pet_the_dog) {
+      pet_the_dog = false;
+      wdt_reset();
+    }
   }
 
   return 0;
